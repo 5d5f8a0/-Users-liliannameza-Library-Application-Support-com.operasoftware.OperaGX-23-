@@ -1,0 +1,165 @@
+import React, { useState, useEffect } from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { AlertCircle, CheckCircle, RefreshCw, GitBranch, GitCommit } from 'lucide-react'
+import { toast } from "@/components/ui/use-toast"
+
+interface Transaction {
+  id: string;
+  date: string;
+  amount: number;
+  status: 'pending' | 'completed' | 'failed';
+  customer: string;
+  product: string;
+}
+
+const initialTransactions: Transaction[] = [
+  { id: 'txn_001', date: '2023-06-10', amount: 99.99, status: 'completed', customer: 'John Doe', product: 'Premium Plan' },
+  { id: 'txn_002', date: '2023-06-11', amount: 149.99, status: 'pending', customer: 'Jane Smith', product: 'Enterprise Plan' },
+  { id: 'txn_003', date: '2023-06-12', amount: 49.99, status: 'completed', customer: 'Alice Johnson', product: 'Basic Plan' },
+]
+
+export default function CheckoutTransactionTable() {
+  const [transactions, setTransactions] = useState<Transaction[]>(initialTransactions)
+  const [newAmount, setNewAmount] = useState('')
+  const [isProcessing, setIsProcessing] = useState(false)
+
+  useEffect(() => {
+    // Simulating GitHub Actions workflow run on component mount
+    toast({
+      title: "GitHub Action Triggered",
+      description: "Initializing transaction processing workflow...",
+    })
+  }, [])
+
+  const handleAddTransaction = () => {
+    if (!newAmount || isNaN(parseFloat(newAmount))) {
+      toast({
+        title: "Invalid Amount",
+        description: "Please enter a valid transaction amount.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsProcessing(true)
+
+    // Simulating GitHub Actions workflow
+    toast({
+      title: "GitHub Action Triggered",
+      description: "Processing new transaction...",
+    })
+
+    setTimeout(() => {
+      const newTransaction: Transaction = {
+        id: `txn_${Math.random().toString(36).substr(2, 9)}`,
+        date: new Date().toISOString().split('T')[0],
+        amount: parseFloat(newAmount),
+        status: 'pending',
+        customer: 'New Customer',
+        product: 'Custom Order',
+      }
+
+      setTransactions(prev => [newTransaction, ...prev])
+      setNewAmount('')
+      setIsProcessing(false)
+
+      toast({
+        title: "Transaction Added",
+        description: "New transaction has been processed and added to the table.",
+      })
+    }, 2000)
+  }
+
+  const handleProcessPending = () => {
+    setIsProcessing(true)
+
+    // Simulating GitHub Actions workflow for processing pending transactions
+    toast({
+      title: "GitHub Action Triggered",
+      description: "Processing pending transactions...",
+    })
+
+    setTimeout(() => {
+      setTransactions(prev => 
+        prev.map(t => t.status === 'pending' ? { ...t, status: Math.random() > 0.2 ? 'completed' : 'failed' } : t)
+      )
+      setIsProcessing(false)
+
+      toast({
+        title: "Transactions Processed",
+        description: "All pending transactions have been processed.",
+      })
+    }, 3000)
+  }
+
+  return (
+    <Card className="w-full max-w-4xl mx-auto">
+      <CardHeader>
+        <CardTitle className="text-2xl flex items-center gap-2">
+          <GitBranch className="w-6 h-6" />
+          Checkout Transaction Table
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="flex items-center space-x-2 mb-4">
+          <Input
+            type="number"
+            placeholder="Enter transaction amount"
+            value={newAmount}
+            onChange={(e) => setNewAmount(e.target.value)}
+            className="w-48"
+          />
+          <Button onClick={handleAddTransaction} disabled={isProcessing}>
+            Add Transaction
+          </Button>
+          <Button onClick={handleProcessPending} disabled={isProcessing} variant="outline">
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Process Pending
+          </Button>
+        </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Transaction ID</TableHead>
+              <TableHead>Date</TableHead>
+              <TableHead>Amount</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Customer</TableHead>
+              <TableHead>Product</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {transactions.map((transaction) => (
+              <TableRow key={transaction.id}>
+                <TableCell>
+                  <Badge variant="outline" className="font-mono">
+                    <GitCommit className="w-3 h-3 mr-1" />
+                    {transaction.id}
+                  </Badge>
+                </TableCell>
+                <TableCell>{transaction.date}</TableCell>
+                <TableCell>${transaction.amount.toFixed(2)}</TableCell>
+                <TableCell>
+                  <Badge
+                    variant={transaction.status === 'completed' ? 'success' : transaction.status === 'pending' ? 'warning' : 'destructive'}
+                  >
+                    {transaction.status === 'completed' && <CheckCircle className="w-3 h-3 mr-1" />}
+                    {transaction.status === 'pending' && <RefreshCw className="w-3 h-3 mr-1" />}
+                    {transaction.status === 'failed' && <AlertCircle className="w-3 h-3 mr-1" />}
+                    {transaction.status}
+                  </Badge>
+                </TableCell>
+                <TableCell>{transaction.customer}</TableCell>
+                <TableCell>{transaction.product}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  )
+}
