@@ -1,93 +1,97 @@
-# This workflow installs the latest version of Terraform CLI and configures the Terraform CLI configuration file
-# with an API token for Terraform Cloud (app.terraform.io). On pull request events, this workflow will run
-# `terraform init`, `terraform fmt`, and `terraform plan` (speculative plan via Terraform Cloud). On push events
-# to the "main" branch, `terraform apply` will be executed.
-#
-# Documentation for `hashicorp/setup-terraform` is located here: https://github.com/hashicorp/setup-terraform
-#
-# To use this workflow, you will need to complete the following setup steps.
-#
-# 1. Create a `main.tf` file in the root of this repository with the `remote` backend and one or more resources defined.
-#   Example `main.tf`:
-#     # The configuration for the `remote` backend.
-#     terraform {
-#       backend "remote" {
-#         # The name of your Terraform Cloud organization.
-#         organization = "example-organization"
-#
-#         # The name of the Terraform Cloud workspace to store Terraform state files in.
-#         workspaces {
-#           name = "example-workspace"
-#         }
-#       }
-#     }
-#
-#     # An example resource that does nothing.
-#     resource "null_resource" "example" {
-#       triggers = {
-#         value = "A example resource that does nothing!"
-#       }
-#     }
-#
-#
-# 2. Generate a Terraform Cloud user API token and store it as a GitHub secret (e.g. TF_API_TOKEN) on this repository.
-#   Documentation:
-#     - https://www.terraform.io/docs/cloud/users-teams-organizations/api-tokens.html
-#     - https://help.github.com/en/actions/configuring-and-managing-workflows/creating-and-storing-encrypted-secrets
-#
-# 3. Reference the GitHub secret in step using the `hashicorp/setup-terraform` GitHub Action.
-#   Example:
-#     - name: Setup Terraform
-#       uses: hashicorp/setup-terraform@v1
-#       with:
-#         cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+import React, { useState } from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { toast } from "@/components/ui/use-toast"
+import { Github, Play, Save } from 'lucide-react'
 
-name: 'Terraform'
+export default function PhysicsGitHubIntegration() {
+  const [code, setCode] = useState(`import diffractsim
+diffractsim.set_backend("CPU") #Change the string to "CUDA" to use GPU acceleration
 
-on:
-  push:
-    branches: [ "main" ]
-  pull_request:
+from diffractsim import MonochromaticField, ApertureFromImage, Lens, mm, nm, cm, FourierPhaseRetrieval
 
-permissions:
-  contents: read
+#Generate a Fourier plane phase hologram
+PR = FourierPhaseRetrieval(target_amplitude_path = './apertures/dickbutt.jpg', new_size= (400,400), pad = (200,200))
+PR.retrieve_phase_mask(max_iter = 200, method = 'Conjugate-Gradient')
+PR.save_retrieved_phase_as_image("grating holo.jpg", phase_mask_format = 'grayscale')
 
-jobs:
-  terraform:
-    name: 'Terraform'
-    runs-on: ubuntu-latest
-    environment: production
+F = MonochromaticField(
+    wavelength=500 * nm, extent_x=18 * mm, extent_y=18 * mm, Nx=1024, Ny=1024
+)
 
-    # Use the Bash shell regardless whether the GitHub Actions runner is ubuntu-latest, macos-latest, or windows-latest
-    defaults:
-      run:
-        shell: bash
+F.add(ApertureFromImage("./grating holo.jpg", image_size=(5 * mm, 5 * mm), simulation = F))
+F.add(Lens(f = 20*cm))
+#for i in range(1, 160, 1):
+F.propagate(20 * cm)
+rgb = F.get_colors()
+F.plot_colors(rgb, xlim=[-7* mm, 7* mm], ylim=[-7* mm, 7* mm])`)
 
-    steps:
-    # Checkout the repository to the GitHub Actions runner
-    - name: Checkout
-      uses: actions/checkout@v4
+  const [repoUrl, setRepoUrl] = useState('')
 
-    # Install the latest version of Terraform CLI and configure the Terraform CLI configuration file with a Terraform Cloud user API token
-    - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v1
-      with:
-        cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+  const handleRunSimulation = () => {
+    toast({
+      title: "Simulation Started",
+      description: "The physics simulation is now running. This may take a few moments.",
+    })
+    // In a real application, this is where you'd trigger the actual simulation
+  }
 
-    # Initialize a new or existing Terraform working directory by creating initial files, loading any remote state, downloading modules, etc.
-    - name: Terraform Init
-      run: terraform init
+  const handleSaveToGitHub = () => {
+    if (!repoUrl) {
+      toast({
+        title: "Error",
+        description: "Please enter a GitHub repository URL.",
+        variant: "destructive",
+      })
+      return
+    }
+    toast({
+      title: "Saving to GitHub",
+      description: `Pushing changes to ${repoUrl}`,
+    })
+    // In a real application, this is where you'd implement the GitHub integration
+  }
 
-    # Checks that all Terraform configuration files adhere to a canonical format
-    - name: Terraform Format
-      run: terraform fmt -check
-
-    # Generates an execution plan for Terraform
-    - name: Terraform Plan
-      run: terraform plan -input=false
-
-      # On push to "main", build or change infrastructure according to Terraform configuration files
-      # Note: It is recommended to set up a required "strict" status check in your repository for "Terraform Cloud". See the documentation on "strict" required status checks for more information: https://help.github.com/en/github/administering-a-repository/types-of-required-status-checks
-    - name: Terraform Apply
-      if: github.ref == 'refs/heads/"main"' && github.event_name == 'push'
-      run: terraform apply -auto-approve -input=false
+  return (
+    <Card className="w-full max-w-4xl mx-auto bg-gray-900 text-white">
+      <CardHeader>
+        <CardTitle className="text-xl flex items-center gap-2">
+          <Github className="w-5 h-5" />
+          Physics Simulation GitHub Integration
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="code-editor">Physics Simulation Code</Label>
+          <Textarea
+            id="code-editor"
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            className="font-mono text-sm h-96 bg-gray-800 border-gray-700"
+          />
+        </div>
+        <div className="flex justify-between items-center">
+          <Button onClick={handleRunSimulation} className="flex items-center gap-2">
+            <Play className="w-4 h-4" />
+            Run Simulation
+          </Button>
+          <div className="flex items-center gap-2">
+            <Input
+              placeholder="Enter GitHub repo URL"
+              value={repoUrl}
+              onChange={(e) => setRepoUrl(e.target.value)}
+              className="w-64 bg-gray-800 border-gray-700"
+            />
+            <Button onClick={handleSaveToGitHub} variant="outline" className="flex items-center gap-2">
+              <Save className="w-4 h-4" />
+              Save to GitHub
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
